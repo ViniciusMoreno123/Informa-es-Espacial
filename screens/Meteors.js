@@ -1,6 +1,6 @@
 import axios from "axios";
 import React,{Component} from "react";
-import { Alert, Text,View,StyleSheet } from "react-native";
+import { Alert, Text,View,StyleSheet,SafeAreaView,FlatList,ImageBackground,Image,Dimensions,StatusBar} from "react-native";
 
 export default class MeteorsScreen extends Component{
   constructor(props){
@@ -13,7 +13,7 @@ export default class MeteorsScreen extends Component{
     axios
     .get("https://api.nasa.gov/neo/rest/v1/feed?api_key=75xmhoGLLPUhVcNdIEyR9BWl0sT8oJAjIc0JbOla")
     .then(response =>{
-    this.setState.state({meteors: response.data.near_earth_objects})
+    this.setState({meteors: response.data.near_earth_objects})
     })
     .catch(error =>{
         Alert.alert(error.message);
@@ -23,6 +23,43 @@ export default class MeteorsScreen extends Component{
     componentDidMount(){
         this.getMeteors();
     }
+    keyExtractor = (item,index) => index.toString();
+    
+    renderItem = ({item}) =>{
+        let meteor = item;
+        let imagemFundo,velocidade,tamanho;
+        if(meteor.ameacaPont <=30){
+            imagemFundo = require("../assets/meteor_bg1.png");
+            velocidade = require("../assets/meteor_speed1.gif");
+            tamanho = 100;
+        }else  if(meteor.ameacaPont <=75){
+            imagemFundo = require("../assets/meteor_bg2.png");
+            velocidade = require("../assets/meteor_speed2.gif");
+            tamanho = 150;
+        } else  {
+            imagemFundo = require("../assets/meteor_bg3.png");
+            velocidade = require("../assets/meteor_speed3.gif");
+            tamanho = 200;
+        }
+        return(
+            <View>
+                <ImageBackground source={imagemFundo} style = {styles.backgroundImage}>
+                    <View style = {styles.gifContainer}>
+                       <Image source={velocidade} style = {{width: tamanho, height: tamanho, alignSelf: "center"}}></Image>
+                    </View>
+                    <View>
+                        <Text style = {styles.cardTitle}>{item.name}</Text>
+                        <Text style = {[styles.cardText,{marginTop: 20}]}>Mais Próximo da Terra - {item.close_approach_data[0].close_approach_date_full}</Text>
+                        <Text style = {[styles.cardText,{marginTop: 5}]}>Diâmetro Mínimo (km) - {item.estimated_diameter.kilometers.estimated_diameter_min}</Text>
+                        <Text style = {[styles.cardText,{marginTop: 5}]}>Diâmetro Máximo (km) - {item.estimated_diameter.kilometers.estimated_diameter_max}</Text>
+                        <Text style = {[styles.cardText,{marginTop: 5}]}>Velocidade (km/h) - {item.close_approach_data[0].relative_velocity.kilometers_per_hour}</Text>
+                        <Text style = {[styles.cardText,{marginTop: 5}]}>Distância da Terra (km) - {item.close_approach_data[0].miss_distance.kilometers}</Text>
+                    </View>
+                </ImageBackground>
+            </View>
+        )
+    }
+
     render(){
         if(Object.keys(this.state.meteors).length=== 0){
             return(
@@ -47,18 +84,22 @@ export default class MeteorsScreen extends Component{
 
         element.ameacaPont = pontAmeaca
         })
-        
+       
+        meteors.sort(function(a,b){
+            return b.ameacaPont -  a.ameacaPont;
+        });
+        meteors = meteors.slice(0,5)
        
 
 
         return(
-        <View style = {{
-            flex:1,
-            justifyContent:"center",
-            alignItems:"center"
-        }}>
-    
-            <Text>Tela de localização dos meteoros</Text>
+        <View style = {styles.container}>
+        <SafeAreaView style = {styles.areaSegura}/>
+           <FlatList
+           keyExtractor={this.keyExtractor}
+           data={meteors}
+           renderItem={this.renderItem}
+           horizontal={true}/>
         </View>
         )
     }
@@ -69,7 +110,68 @@ loading:{
     flex:1,
     justifyContent:"center",
     alignItems:"center"
-}
+},
+container:{
+    flex:1
+    },
+areaSegura:{
+    marginTop: Platform.OS === "android"? StatusBar.currentHeight : 0
+    
+    },
+    backgroundImage: {
+        flex: 1,
+        resizeMode: 'cover',
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height
+    },
+    titleBar: {
+        flex: 0.15,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+    titleText: {
+        fontSize: 30,
+        fontWeight: "bold",
+        color: "white"
+    },
+    meteorContainer: {
+        flex: 0.85
+    },
+    listContainer: {
+        backgroundColor: 'rgba(52, 52, 52, 0.5)',
+        justifyContent: "center",
+        marginLeft: 10,
+        marginRight: 10,
+        marginTop: 5,
+        borderRadius: 10,
+        padding: 10
+    },
+   cardTitle: {
+        fontSize: 20,
+        marginBottom: 10,
+        fontWeight: "bold",
+        color: "white",
+        marginLeft: 15
+    },
+    cardText: {
+        color: "white",
+        marginLeft: 15,
+        marginBottom: 10,
+    },
+    threatDetector: {
+        height: 10,
+        marginBottom: 10
+    },
+    gifContainer: {
+        justifyContent: "center",
+        alignItems: "center",
+        flex: 1
+    },
+    meteorDataContainer: {
+        justifyContent: "center",
+        alignItems: "center",
+
+    }
 })
 
 
